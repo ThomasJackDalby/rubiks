@@ -70,6 +70,7 @@ def rotate_face(face, amount):
     return rotate_face(next_face, amount + delta)
 
 def get_face_transform(f):
+    """transforms the cube data from absolute, to 'face relative'"""
     positions = FACE_POSITIONS[f]
     rotations = FACE_ROTATIONS[f]
     return [tile for face in [rotate_face([i + positions[j] * NUM_TILES_FACE for i in range(NUM_TILES_FACE)], rotations[j]) for j in range(6)] for tile in face]
@@ -78,7 +79,7 @@ def get_cube_index(x, y, z):
     """Get the index for a tile within a face."""
     return z * NUM_TILES_FACE + y * CUBE_ORDER + x
 
-# A transform is defined as a direction on an axix with an offset
+# A transform is defined as a direction on an axis with an offset
 # The 12 possible transforms for a 2x2 are:
 # 000 001 010 011
 # 100 101 110 111
@@ -133,9 +134,10 @@ def get_action_transform(offset, amount):
     transform_slice = transform[s:s + NUM_TILES_OFFSET]
 
     if amount > 0:
-        transform[s:s+NUM_TILES_OFFSET] = transform_slice[1:] + [transform_slice[0]]
+        transform[s:s+NUM_TILES_OFFSET] = transform_slice[2:] + transform_slice[:2]
     else:
-        transform[s:s+NUM_TILES_OFFSET] = [transform_slice[-1]] + transform_slice[:-1]
+        transform[s:s+NUM_TILES_OFFSET] = transform_slice[:-2] + transform_slice[-2:]
+
     return transform
 
 def get_transform(face_index, offset, amount):
@@ -146,6 +148,12 @@ def get_transform(face_index, offset, amount):
     inverse_face_to_action_transform = get_inverse_transform(face_to_action_transform)
     inverse_cube_to_face_transform = get_inverse_transform(cube_to_face_transform)
 
+    # print("1:", cube_to_face_transform)
+    # print("2:", face_to_action_transform)
+    # print("3:", action_transform)
+    # print("4:", inverse_face_to_action_transform)
+    # print("5:", inverse_cube_to_face_transform)
+
     compound_transform = list(cube_to_face_transform)
     compound_transform = apply_transform(compound_transform, face_to_action_transform)
     compound_transform = apply_transform(compound_transform, action_transform)
@@ -154,8 +162,17 @@ def get_transform(face_index, offset, amount):
 
     return compound_transform
 
-for i in range(NUM_FACES):
-    for j in range(CUBE_ORDER):
-        for k in [-1, 1]:
-            print(i, j, k)
-            print(get_transform(i, j, k))
+def get_all_transforms():
+    return [get_transform(face_index, offset, 1)
+        for face_index in [0, 1, 2, 3, 4, 5]
+        for offset in range(CUBE_ORDER)]
+
+def print_face_transforms():
+    for face_index in range(6):
+        print(get_face_transform(face_index))
+
+def print_all_transforms():
+    for transform in get_all_transforms():
+        print(f"{transform},")
+
+print_all_transforms()
